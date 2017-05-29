@@ -127,6 +127,7 @@ vflag=""
 nflag=""
 unittests="on"
 swiftlint="on"
+oclint=""
 tailor="on"
 lizard="on"
 sonarscanner=""
@@ -140,6 +141,7 @@ do
     -noswiftlint) swiftlint="";;
     -notailor) tailor="";;
     -usesonarscanner) sonarscanner="on";;
+	-useoclint) oclint="on";;
 	--)	shift; break;;
 	-*)
         echo >&2 "Usage: $0 [-v]"
@@ -272,6 +274,7 @@ if [ "$unittests" = "on" ]; then
 
     runCommand  sonar-reports/xcodebuild.log "${buildCmd[@]}"
     cat sonar-reports/xcodebuild.log  | $XCPRETTY_CMD -t --report junit
+	cat sonar-reports/xcodebuild.log | $XCPRETTY_CMD -r json-compilation-database -o compile_commands.json
     mv build/reports/junit.xml sonar-reports/TEST-report.xml
 
 
@@ -332,6 +335,36 @@ if [ "$swiftlint" = "on" ]; then
 
 else
 	echo 'Skipping SwiftLint (test purposes only!)'
+fi
+
+if [ "$oclint" = "on" ]; then
+
+	# OCLint
+	echo -n 'Running OCLint...'
+
+	# Options
+	maxPriority=10000
+    longLineThreshold=250
+
+	# Build the --include flags
+	currentDirectory=${PWD##*/}
+	echo "$srcDirs" | sed -n 1'p' | tr ',' '\n' > tmpFileRunSonarSh
+	while read word; do
+
+		includedCommandLineFlags=" --include .*/${currentDirectory}/${word}"
+		if [ "$vflag" = "on" ]; then
+            echo
+            echo -n "Path included in oclint analysis is:$includedCommandLineFlags"
+        fi
+		# Run OCLint with the right set of compiler options
+	    runCommand no oclint-json-compilation-database -v $includedCommandLineFlags -- -rc LONG_LINE=$longLineThreshold -max-priority-1 $maxPriority -max-priority-2 $maxPriority -max-priority-3 $maxPriority -report-type pmd -o sonar-reports/$(echo $word | sed 's/\//_/g')-oclint.xml
+
+	done < tmpFileRunSonarSh
+	rm -rf tmpFileRunSonarSh
+
+
+else
+	echo 'Skipping OCLint'
 fi
 
 # Tailor
