@@ -31,7 +31,7 @@ In SonarQube under Quality Profiles the used Linter can be specified by selectin
 | Design		|NO			|			| |
 | Documentation	|YES		|			| |
 | Duplications	|YES		|			| |
-| Issues		|YES		| Uses [SwiftLint](https://github.com/realm/SwiftLint) and/or [Tailor](https://github.com/sleekbyte/tailor)| Uses [Tailor](https://github.com/sleekbyte/tailor)|
+| Issues		|YES		| Uses [SwiftLint](https://github.com/realm/SwiftLint) and/or [Tailor](https://github.com/sleekbyte/tailor) (and [OCLint](http://docs.oclint.org/en/dev/intro/installation.html) for projects with Objective-C)  | Uses [Tailor](https://github.com/sleekbyte/tailor)|
 | Size			|YES		|			||
 | Tests			|YES		| Uses xcodebuild + xcpretty [xcpretty](https://github.com/supermarin/xcpretty)	| Not Supported |
 | Code coverage	|YES			| Uses [slather](https://github.com/venmo/slather)			| Not Supported|
@@ -111,6 +111,7 @@ Otherwise, run the ```run-sonar-swift.sh``` script from your Xcode project root 
 - [SonarQube](https://docs.sonarqube.org/display/SONAR/Setup+and+Upgrade) and [SonarQube Scanner](https://docs.sonarqube.org/display/SCAN/Analyzing+with+SonarQube+Scanner)
 - [xcpretty](https://github.com/supermarin/xcpretty) (see instructions below)
 - [SwiftLint](https://github.com/realm/SwiftLint) ([HomeBrew](http://brew.sh) installed and ```brew install swiftlint```). Version 0.3.0 or above.
+- [OCLint](http://oclint-docs.readthedocs.io/en/stable/) installed for projects with Objective-C. Version 0.11.0 recommended. 
 - [Tailor](https://github.com/sleekbyte/tailor) ([HomeBrew](http://brew.sh) installed and ```brew install tailor```). Version 0.11.1 or above.
 - [slather](https://github.com/SlatherOrg/slather) (```gem install slather```). Version 2.1.0 or above.
 - [lizard](https://github.com/terryyin/lizard) ([PIP](https://pip.pypa.io/en/stable/installing/) installed and ```sudo pip install lizard```)
