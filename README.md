@@ -43,7 +43,7 @@ Checkout the [Releases](https://github.com/Backelite/sonar-swift/releases) page.
 
 ### Launching an analysis
 If you use [Fastlane](https://fastlane.tools), please read [our Fastlane integration doc](docs/sonarqube-fastlane.md).
-Otherwise, run the ```run-sonar-swift.sh``` script from your Xcode project root folder
+Otherwise, run the ```run-sonar-ios.sh``` script from your Xcode project root folder
 
 ### Release history
 
@@ -130,7 +130,7 @@ To install the fixed version, follow those steps :
 
 ### Installation (once for all your Swift projects)
 - Download the plugin binary into the $SONARQUBE_HOME/extensions/plugins directory
-- Copy [run-sonar-swift.sh](https://rawgithub.com/Backelite/sonar-swift/master/src/main/shell/run-sonar-swift.sh) somewhere in your PATH
+- Copy [run-sonar-ios.sh](https://rawgithub.com/Backelite/sonar-swift/master/src/main/shell/run-sonar-ios.sh) somewhere in your PATH
 - Restart the SonarQube server.
 
 ### Configuration (once per project)
@@ -141,9 +141,9 @@ To install the fixed version, follow those steps :
 
 ### Update (once per plugin update)
 - Install the lastest plugin version
-- Copy ```run-sonar-swift.sh``` somewhere in your PATH
+- Copy ```run-sonar-ios.sh``` somewhere in your PATH
 
-If you still have *run-sonar-swift.sh* file in each of your project (not recommended), you will need to update all those files.
+If you still have *run-sonar-ios.sh* file in each of your project (not recommended), you will need to update all those files.
 
 ### Contributing
 

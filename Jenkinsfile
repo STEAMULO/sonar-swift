@@ -32,13 +32,13 @@ node("master") {
                 echo "Des nodes ne l'ont pas installé car offline"
                 emailext body: """Bonjour,
 
-    Le run-sonnar Swift n\'a pas \u00E9t\u00E9 install\u00E9 sur ces Slaves car ils sont hors ligne.
+    Le run-sonnar iOS n\'a pas \u00E9t\u00E9 install\u00E9 sur ces Slaves car ils sont hors ligne.
     Merci de les mettre onLine et de relancer le job une fois ceux-ci disponibles.
             
     $nodeNameOffLine
 
     Bonne journ\u00E9e
-            """, subject: 'Installation du runner sonar Swift impossible sur Slave OffLine', to: 'ios@steamulo.com'
+            """, subject: 'Installation du runner sonar iOS impossible sur Slave OffLine', to: 'ios@steamulo.com'
             }
         }
     } catch (any) {
@@ -54,7 +54,7 @@ def installRunnerSonar(List nodeNameList) {
         node ("$nodeName") {
             echo ("Installation sur $nodeName")
             checkout scm
-            def scriptPath = "src/main/shell/run-sonar-swift.sh"
+            def scriptPath = "src/main/shell/run-sonar-ios.sh"
             def osxPath = "/usr/local/bin/"
             sh "cp -f ${scriptPath} ${osxPath}."
             step([$class: 'WsCleanup'])

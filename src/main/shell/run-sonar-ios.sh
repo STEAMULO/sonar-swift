@@ -1,7 +1,7 @@
 #!/bin/bash
 ## INSTALLATION: script to copy in your Xcode project in the same directory as the .xcodeproj file
-## USAGE: ./run-sonar-swift.sh
-## DEBUG: ./run-sonar-swift.sh -v
+## USAGE: ./run-sonar-ios.sh
+## DEBUG: ./run-sonar-ios.sh -v
 ## WARNING: edit your project parameters in sonar-project.properties rather than modifying this script
 #
 
@@ -132,6 +132,17 @@ tailor="on"
 lizard="on"
 sonarscanner=""
 
+sonarLanguage=''; readParameter sonarLanquage 'sonar.language'
+
+# Enable OCLint if objc
+if [ "$sonarLanguage" != "swift" ]; then #if not full swift, enable OCLint
+	oclint="on"
+fi
+if [ "$sonarLanguage" == "objc"  ]; then #if full objc, disable swiftLint
+	swiftlint=""
+	tailor=""
+fi
+
 while [ $# -gt 0 ]
 do
     case "$1" in
@@ -152,7 +163,7 @@ do
 done
 
 # Usage OK
-echo "Running run-sonar-swift.sh..."
+echo "Running run-sonar-ios.sh..."
 
 ## CHECK PREREQUISITES
 
@@ -164,8 +175,8 @@ fi
 ## READ PARAMETERS from sonar-project.properties
 
 #.xcodeproj filename
-projectFile=''; readParameter projectFile 'sonar.swift.project'
-workspaceFile=''; readParameter workspaceFile 'sonar.swift.workspace'
+projectFile=''; readParameter projectFile 'sonar.ios.project'
+workspaceFile=''; readParameter workspaceFile 'sonar.ios.workspace'
 
 # Count projects
 if [[ ! -z "$projectFile" ]]; then
@@ -175,49 +186,49 @@ if [[ ! -z "$projectFile" ]]; then
 	fi
 fi
 
-# Source directories for .swift files
+# Source directories for .h/.m/.swift files
 srcDirs=''; readParameter srcDirs 'sonar.sources'
 # The name of your application scheme in Xcode
-appScheme=''; readParameter appScheme 'sonar.swift.appScheme'
+appScheme=''; readParameter appScheme 'sonar.ios.appScheme'
 # The app configuration to use for the build
-appConfiguration=''; readParameter appConfiguration 'sonar.swift.appConfiguration'
+appConfiguration=''; readParameter appConfiguration 'sonar.ios.appConfiguration'
 # The name of your test scheme in Xcode
-testScheme=''; readParameter testScheme 'sonar.swift.testScheme'
+testScheme=''; readParameter testScheme 'sonar.ios.testScheme'
 # The name of your binary file (application)
-binaryName=''; readParameter binaryName 'sonar.swift.appName'
+binaryName=''; readParameter binaryName 'sonar.ios.appName'
 # Get the path of plist file
 plistFile=`xcodebuild -showBuildSettings -project ${projectFile} | grep -i 'PRODUCT_SETTINGS_PATH' -m 1 | sed 's/[ ]*PRODUCT_SETTINGS_PATH = //'`
 # Number version from plist if no sonar.projectVersion
 numVerionFromPlist=`defaults read ${plistFile} CFBundleShortVersionString`
 
 # Read destination simulator
-destinationSimulator=''; readParameter destinationSimulator 'sonar.swift.simulator'
+destinationSimulator=''; readParameter destinationSimulator 'sonar.ios.simulator'
 
 # Read tailor configuration
 tailorConfiguration=''; readParameter tailorConfiguration 'sonar.swift.tailor.config'
 
 # The file patterns to exclude from coverage report
-excludedPathsFromCoverage=''; readParameter excludedPathsFromCoverage 'sonar.swift.excludedPathsFromCoverage'
+excludedPathsFromCoverage=''; readParameter excludedPathsFromCoverage 'sonar.ios.excludedPathsFromCoverage'
 
 # Check for mandatory parameters
 if [ -z "$projectFile" -o "$projectFile" = " " ] && [ -z "$workspaceFile" -o "$workspaceFile" = " " ]; then
-	echo >&2 "ERROR - sonar.swift.project or/and sonar.swift.workspace parameter is missing in sonar-project.properties. You must specify which projects (comma-separated list) are application code or which workspace and project to use."
+	echo >&2 "ERROR - sonar.ios.project or/and sonar.ios.workspace parameter is missing in sonar-project.properties. You must specify which projects (comma-separated list) are application code or which workspace and project to use."
 	exit 1
 elif [ ! -z "$workspaceFile" ] && [ -z "$projectFile" ]; then
-	echo >&2 "ERROR - sonar.swift.workspace parameter is present in sonar-project.properties but sonar.swift.project and is not. You must specify which projects (comma-separated list) are application code or which workspace and project to use."
+	echo >&2 "ERROR - sonar.ios.workspace parameter is present in sonar-project.properties but sonar.ios.project and is not. You must specify which projects (comma-separated list) are application code or which workspace and project to use."
 	exit 1
 fi
 if [ -z "$srcDirs" -o "$srcDirs" = " " ]; then
-	echo >&2 "ERROR - sonar.sources parameter is missing in sonar-project.properties. You must specify which directories contain your .swift source files (comma-separated list)."
+	echo >&2 "ERROR - sonar.sources parameter is missing in sonar-project.properties. You must specify which directories contain your .h/.m/.swift source files (comma-separated list)."
 	exit 1
 fi
 if [ -z "$appScheme" -o "$appScheme" = " " ]; then
-	echo >&2 "ERROR - sonar.swift.appScheme parameter is missing in sonar-project.properties. You must specify which scheme is used to build your application."
+	echo >&2 "ERROR - sonar.ios.appScheme parameter is missing in sonar-project.properties. You must specify which scheme is used to build your application."
 	exit 1
 fi
 if [ "$unittests" = "on" ]; then
     if [ -z "$destinationSimulator" -o "$destinationSimulator" = " " ]; then
-	      echo >&2 "ERROR - sonar.swift.simulator parameter is missing in sonar-project.properties. You must specify which simulator to use."
+	      echo >&2 "ERROR - sonar.ios.simulator parameter is missing in sonar-project.properties. You must specify which simulator to use."
 	      exit 1
     fi
 fi
@@ -258,12 +269,23 @@ fi
 rm -rf sonar-reports
 mkdir sonar-reports
 
-if [ "$unittests" = "on" ]; then
-    # Unit tests and coverage
+# Extracting project information needed later
+echo -n 'Extracting Xcode project information'
+buildCmd=(xcodebuild clean build)
+if [[ "$workspaceFile" != "" ]] ; then
+    buildCmd+=(-workspace "$workspaceFile")
+else
+	buildCmd+=(-project "$projectFile")
+fi
+buildCmd+=( -scheme "$appScheme")
+if [[ ! -z "$destinationSimulator" ]]; then
+    buildCmd+=(-destination "$destinationSimulator" -destination-timeout 360)
+fi
+runCommand xcodebuild.log "${buildCmd[@]}"
+cat xcodebuild.log | $XCPRETTY_CMD -r json-compilation-database -o compile_commands.json
 
-    # Put default xml files with no tests and no coverage...
-    echo "<?xml version='1.0' encoding='UTF-8' standalone='yes'?><testsuites name='AllTestUnits'></testsuites>" > sonar-reports/TEST-report.xml
-    echo "<?xml version='1.0' ?><!DOCTYPE coverage SYSTEM 'http://cobertura.sourceforge.net/xml/coverage-03.dtd'><coverage><sources></sources><packages></packages></coverage>" > sonar-reports/coverage-swift.xml
+# Unit tests and coverage
+if [ "$testScheme" = "on" ] && [ "$unittests" = "on" ]; then
 
     echo -n 'Running tests'
     buildCmd=(xcodebuild clean build test)
@@ -272,14 +294,13 @@ if [ "$unittests" = "on" ]; then
     elif [[ ! -z "$projectFile" ]]; then
 	      buildCmd+=(-project "$projectFile")
     fi
-    buildCmd+=( -scheme "$appScheme" -configuration "$appConfiguration" -enableCodeCoverage YES)
+    buildCmd+=( -scheme "$appScheme" -configuration "$appConfiguration"  -enableCodeCoverage YES)
     if [[ ! -z "$destinationSimulator" ]]; then
         buildCmd+=(-destination "$destinationSimulator" -destination-timeout 60)
     fi
 
     runCommand  sonar-reports/xcodebuild.log "${buildCmd[@]}"
     cat sonar-reports/xcodebuild.log  | $XCPRETTY_CMD -t --report junit
-	cat sonar-reports/xcodebuild.log | $XCPRETTY_CMD -r json-compilation-database -o compile_commands.json
     mv build/reports/junit.xml sonar-reports/TEST-report.xml
 
 
@@ -316,6 +337,12 @@ if [ "$unittests" = "on" ]; then
 
     runCommand /dev/stdout "${slatherCmd[@]}"
     mv sonar-reports/cobertura.xml sonar-reports/coverage-swift.xml
+else
+	echo 'Skipping tests!'
+	
+	# Put default xml files with no tests and no coverage...
+	echo "<?xml version='1.0' encoding='UTF-8' standalone='yes'?><testsuites name='AllTestUnits'></testsuites>" > sonar-reports/TEST-report.xml
+	echo "<?xml version='1.0' ?><!DOCTYPE coverage SYSTEM 'http://cobertura.sourceforge.net/xml/coverage-03.dtd'><coverage><sources></sources><packages></packages></coverage>" > sonar-reports/coverage-swift.xml
 fi
 
 # SwiftLint
@@ -338,7 +365,7 @@ if [ "$swiftlint" = "on" ]; then
 	fi
 
 else
-	echo 'Skipping SwiftLint (test purposes only!)'
+	echo 'Skipping SwiftLint (objc project or test purposes!)'
 fi
 
 if [ "$oclint" = "on" ]; then
