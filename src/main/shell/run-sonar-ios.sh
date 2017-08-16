@@ -285,7 +285,7 @@ runCommand xcodebuild.log "${buildCmd[@]}"
 cat xcodebuild.log | $XCPRETTY_CMD -r json-compilation-database -o compile_commands.json
 
 # Unit tests and coverage
-if [ "$testScheme" = "on" ] && [ "$unittests" = "on" ]; then
+if [ "$testScheme" != "" ] && [ "$unittests" = "on" ]; then
 
     echo -n 'Running tests'
     buildCmd=(xcodebuild clean build test)
