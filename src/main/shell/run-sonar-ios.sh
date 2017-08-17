@@ -426,6 +426,8 @@ if [ "$lizard" = "on" ]; then
 	if hash $LIZARD_CMD 2>/dev/null; then
 		echo -n 'Running Lizard...'
   		$LIZARD_CMD --xml "$srcDirs" > sonar-reports/lizard-report.xml
+		#Create empty for l'objective-c, avoid conflicts
+		echo "<?xml version='1.0' ?><?xml-stylesheet type='text/xsl' href='https://raw.githubusercontent.com/terryyin/lizard/master/lizard.xsl'?><cppncss></cppncss>" > sonar-reports/lizard-report-objc.xml
   	else
   		echo 'Skipping Lizard (not installed!)'
   	fi

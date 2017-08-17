@@ -47,6 +47,10 @@ Otherwise, run the ```run-sonar-ios.sh``` script from your Xcode project root fo
 
 ### Release history
 
+#### 0.3.4.2
+- Avoid conflicts with objc plugins for lizard
+- Avoid conflicts with objc plugins for Surefire
+
 #### 0.3.4.1
 - Fix for project with spaces
 - Fix for coverage when using objc and swift project
