@@ -47,6 +47,11 @@ Otherwise, run the ```run-sonar-ios.sh``` script from your Xcode project root fo
 
 ### Release history
 
+#### 0.3.4.1
+- Fix for project with spaces
+- Fix for coverage when using objc and swift project
+- Evol get automatically project version from project's plist
+
 #### 0.3.4
 - SwiftLint 0.18.1 (add 8 more rules)
 - Fix README headers
