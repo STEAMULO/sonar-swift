@@ -47,6 +47,10 @@ Otherwise, run the ```run-sonar-ios.sh``` script from your Xcode project root fo
 
 ### Release history
 
+#### 0.3.5.1
+- Merge 0.3.4.1 into 0.3.5
+- Merge 0.3.4.2 into 0.3.5
+
 #### 0.3.5
 - SwiftLint 0.21.0 (95 rules now)
 - SonarQube 6.5 support
