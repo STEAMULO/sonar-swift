@@ -54,7 +54,7 @@ def installRunnerSonar(List nodeNameList) {
         node ("$nodeName") {
             echo ("Installation sur $nodeName")
             checkout scm
-            def scriptPath = "src/main/shell/run-sonar-ios.sh"
+            def scriptPath = "sonar-swift-plugin/src/main/shell/run-sonar-ios.sh"
             def osxPath = "/usr/local/bin/"
             sh "cp -f ${scriptPath} ${osxPath}."
             step([$class: 'WsCleanup'])
