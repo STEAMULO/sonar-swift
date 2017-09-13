@@ -70,9 +70,13 @@ function readParameter() {
 function runCommand() {
 
 	# 1st arg: redirect stdout
-	# 2nd arg: command to run
-	# 3rd..nth arg: args
+	# 2nd arg: status code wich is not an error
+	# 3rd arg: command to run
+	# 4th..nth arg: args
 	redirect=$1
+	shift
+
+	returnValueValid=$1
 	shift
 
 	command=$1
@@ -113,7 +117,7 @@ function runCommand() {
 			set +x #echo off
 		fi
 
-		if [[ $returnValue != 0 && $returnValue != 5 ]] ; then
+		if [[ $returnValue != 0 && $returnValue != 5 && $returnValue != $returnValueValid ]] ; then
 			stopProgress
 			echo "ERROR - Command '$command $@' failed with error code: $returnValue"
 			exit $returnValue
@@ -129,7 +133,7 @@ function runCommand() {
 		fi
 
         returnValue=$?
-		if [[ $returnValue != 0 && $returnValue != 5 ]] ; then
+		if [[ $returnValue != 0 && $returnValue != 5 && $returnValue != $returnValueValid ]] ; then
 			stopProgress
 			echo "ERROR - Command '$command $@' failed with error code: $returnValue"
 			exit $returnValue
@@ -299,7 +303,7 @@ buildCmd+=( -scheme "$appScheme")
 if [[ ! -z "$destinationSimulator" ]]; then
     buildCmd+=(-destination "$destinationSimulator" -destination-timeout 360)
 fi
-runCommand xcodebuild.log "${buildCmd[@]}"
+runCommand xcodebuild.log 0 "${buildCmd[@]}"
 cat xcodebuild.log | $XCPRETTY_CMD -r json-compilation-database -o compile_commands.json
 
 # Unit surefire and coverage
@@ -317,7 +321,7 @@ if [ "$testScheme" != "" ] && [ "$unittests" = "on" ]; then
         buildCmd+=(-destination "$destinationSimulator" -destination-timeout 60)
     fi
 
-    runCommand  sonar-reports/xcodebuild.log "${buildCmd[@]}"
+    runCommand sonar-reports/xcodebuild.log 65 "${buildCmd[@]}"
     cat sonar-reports/xcodebuild.log  | $XCPRETTY_CMD -t --report junit
     mv build/reports/junit.xml sonar-reports/TEST-report.xml
 
@@ -353,7 +357,7 @@ if [ "$testScheme" != "" ] && [ "$unittests" = "on" ]; then
 
     echo "${slatherCmd[@]}"
 
-    runCommand /dev/stdout "${slatherCmd[@]}"
+    runCommand /dev/stdout 0 "${slatherCmd[@]}"
     mv sonar-reports/cobertura.xml sonar-reports/coverage-swift.xml
 else
 	echo 'Skipping tests!'
@@ -406,7 +410,7 @@ if [ "$oclint" = "on" ]; then
             echo -n "Path included in oclint analysis is:$includedCommandLineFlags"
         fi
 		# Run OCLint with the right set of compiler options
-	    runCommand no oclint-json-compilation-database -v $includedCommandLineFlags -- -rc LONG_LINE=$longLineThreshold -max-priority-1 $maxPriority -max-priority-2 $maxPriority -max-priority-3 $maxPriority -report-type pmd -o sonar-reports/$(echo $word | sed 's/\//_/g')-oclint.xml
+	    runCommand no 0 oclint-json-compilation-database -v $includedCommandLineFlags -- -rc LONG_LINE=$longLineThreshold -max-priority-1 $maxPriority -max-priority-2 $maxPriority -max-priority-3 $maxPriority -report-type pmd -o sonar-reports/$(echo $word | sed 's/\//_/g')-oclint.xml
 
 	done < tmpFileRunSonarSh
 	rm -rf tmpFileRunSonarSh
@@ -465,16 +469,16 @@ fi
 if [ "$sonarscanner" = "on" ]; then
     echo -n 'Running SonarQube using SonarQube Scanner'
     if hash /dev/stdout sonar-scanner 2>/dev/null; then
-        runCommand /dev/stdout sonar-scanner $numVersionSonarRunner
+        runCommand 0 /dev/stdout sonar-scanner $numVersionSonarRunner
     else
         echo 'Skipping sonar-scanner (not installed!)'
     fi
 else
     echo -n 'Running SonarQube using SonarQube Runner'
     if hash /dev/stdout sonar-runner 2>/dev/null; then
-	   runCommand /dev/stdout sonar-runner $numVersionSonarRunner
+	   runCommand 0 /dev/stdout sonar-runner $numVersionSonarRunner
     else
-	   runCommand /dev/stdout sonar-scanner $numVersionSonarRunner
+	   runCommand 0 /dev/stdout sonar-scanner $numVersionSonarRunner
     fi
 fi
 
