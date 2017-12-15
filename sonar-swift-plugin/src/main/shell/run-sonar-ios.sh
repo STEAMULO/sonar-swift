@@ -469,16 +469,16 @@ fi
 if [ "$sonarscanner" = "on" ]; then
     echo -n 'Running SonarQube using SonarQube Scanner'
     if hash /dev/stdout sonar-scanner 2>/dev/null; then
-        runCommand 0 /dev/stdout sonar-scanner $numVersionSonarRunner
+        runCommand /dev/stdout 0 sonar-scanner $numVersionSonarRunner
     else
         echo 'Skipping sonar-scanner (not installed!)'
     fi
 else
     echo -n 'Running SonarQube using SonarQube Runner'
     if hash /dev/stdout sonar-runner 2>/dev/null; then
-	   runCommand 0 /dev/stdout sonar-runner $numVersionSonarRunner
+	   runCommand /dev/stdout 0 sonar-runner $numVersionSonarRunner
     else
-	   runCommand 0 /dev/stdout sonar-scanner $numVersionSonarRunner
+	   runCommand /dev/stdout 0 sonar-scanner $numVersionSonarRunner
     fi
 fi
 
