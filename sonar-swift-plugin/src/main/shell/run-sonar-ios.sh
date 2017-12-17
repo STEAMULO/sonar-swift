@@ -154,7 +154,7 @@ tailor="on"
 lizard="on"
 sonarscanner=""
 
-sonarLanguage=''; readParameter sonarLanquage 'sonar.language'
+sonarLanguage=''; readParameter sonarLanguage 'sonar.language'
 
 # Enable OCLint if objc
 if [ "$sonarLanguage" != "swift" ]; then #if not full swift, enable OCLint
