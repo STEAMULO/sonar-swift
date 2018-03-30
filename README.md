@@ -47,6 +47,9 @@ Otherwise, run the ```run-sonar-ios.sh``` script from your Xcode project root fo
 
 ### Release history
 
+#### 0.3.5.2
+- Fix for swiftLint report with file path starting with link
+
 #### 0.3.5.1
 - Merge 0.3.4.1 into 0.3.5
 - Merge 0.3.4.2 into 0.3.5
