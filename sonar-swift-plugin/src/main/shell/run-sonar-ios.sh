@@ -226,6 +226,9 @@ numVerionFromPlist=`defaults read ${plistFile} CFBundleShortVersionString`
 # Read destination simulator
 destinationSimulator=''; readParameter destinationSimulator 'sonar.ios.simulator'
 
+# The file patterns to exclude from OCLint report
+excludedPathsOCLint=''; readParameter excludedPathsOCLint 'sonar.objectivec.oclint.excludPaths'
+
 # Read tailor configuration
 tailorConfiguration=''; readParameter tailorConfiguration 'sonar.swift.tailor.config'
 
@@ -403,15 +406,32 @@ if [ "$oclint" = "on" ]; then
 	currentDirectory=${PWD##*/}
 	echo "$srcDirs" | sed -n 1'p' | tr ',' '\n' > tmpFileRunSonarSh
 	while read word; do
-
+		reportFile="sonar-reports/$(echo $word | sed 's/\//_/g')-oclint.xml"
 		includedCommandLineFlags=" --include .*/${currentDirectory}/${word}"
 		if [ "$vflag" = "on" ]; then
             echo
             echo -n "Path included in oclint analysis is:$includedCommandLineFlags"
         fi
-		# Run OCLint with the right set of compiler options
-	    runCommand no 0 oclint-json-compilation-database -v $includedCommandLineFlags -- -rc LONG_LINE=$longLineThreshold -max-priority-1 $maxPriority -max-priority-2 $maxPriority -max-priority-3 $maxPriority -report-type pmd -o sonar-reports/$(echo $word | sed 's/\//_/g')-oclint.xml
 
+		echo "$excludedPathsOCLint" | sed -n 1'p' | tr ',' '\n' > tmpFileExcludeOCLint
+		while read word; do
+			if [ "$word" != "" ]; then
+				exludedCommandLineFlags+=" --exclude ${word}"
+			fi
+		done < tmpFileExcludeOCLint
+		rm -rf tmpFileExcludeOCLint
+		if [ "$vflag" = "on" ]; then
+            echo
+            echo -n "Path exclude in oclint analysis is:$exludedCommandLineFlags"
+        fi
+
+		# Run OCLint with the right set of compiler options
+	    runCommand no 0 oclint-json-compilation-database $exludedCommandLineFlags -v $includedCommandLineFlags -- -rc LONG_LINE=$longLineThreshold -max-priority-1 $maxPriority -max-priority-2 $maxPriority -max-priority-3 $maxPriority -report-type pmd -o $reportFile
+		
+		# On renomme path des fichiers sans le Symlink
+        cmdSed="sed "s/\/tmp\/workspace/\/private\/tmp\/workspace/g" $reportFile"
+		runCommand /dev/null 0 "${cmdSed[@]}"
+		
 	done < tmpFileRunSonarSh
 	rm -rf tmpFileRunSonarSh
 
