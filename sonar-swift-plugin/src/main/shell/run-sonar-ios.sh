@@ -427,7 +427,7 @@ if [ "$oclint" = "on" ]; then
 		
 		# Run OCLint with the right set of compiler options
 	    runCommand no 0 oclint-json-compilation-database $exludedCommandLineFlags -v $includedCommandLineFlags -- -rc LONG_LINE=$longLineThreshold -max-priority-1 $maxPriority -max-priority-2 $maxPriority -max-priority-3 $maxPriority -report-type pmd -o $reportFile
-		
+
 		# On renomme path des fichiers sans le Symlink
 		sed -i '' 's/\/tmp\/workspace/\/private\/tmp\/workspace/g' ${reportFile}
 		
