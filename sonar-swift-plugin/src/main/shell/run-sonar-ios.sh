@@ -424,12 +424,14 @@ if [ "$oclint" = "on" ]; then
             echo
             echo -n "Path exclude in oclint analysis is:$exludedCommandLineFlags"
         fi
-
+		
 		# Run OCLint with the right set of compiler options
 	    runCommand no 0 oclint-json-compilation-database $exludedCommandLineFlags -v $includedCommandLineFlags -- -rc LONG_LINE=$longLineThreshold -max-priority-1 $maxPriority -max-priority-2 $maxPriority -max-priority-3 $maxPriority -report-type pmd -o $reportFile
 		
 		# On renomme path des fichiers sans le Symlink
-        cmdSed="sed "s/\/tmp\/workspace/\/private\/tmp\/workspace/g" $reportFile"
+		currentPath="\/tmp\/workspace"
+		pathWithoutSymlink="\/private\/tmp\/workspace"
+        cmdSed="sed "s/${currentPath}/${pathWithoutSymlink}/g" $reportFile"
 		runCommand /dev/null 0 "${cmdSed[@]}"
 		
 	done < tmpFileRunSonarSh
