@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# backelite-sonar-swift-plugin - Enables analysis of Swift projects into SonarQube.
+# backelite-sonar-swift-plugin - Enables analysis of Swift and Objective-C projects into SonarQube.
 # Copyright © 2015 Backelite (${email})
 #
 # This program is free software: you can redistribute it and/or modify
@@ -17,19 +17,19 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-## INSTALLATION: script to copy in your Xcode project in the same directory as the .xcodeproj file
+## INSTALLATION: Copy this script somewhere in your PATH
 ## USAGE: ./run-sonar-ios.sh
 ## DEBUG: ./run-sonar-ios.sh -v
 ## WARNING: edit your project parameters in sonar-project.properties rather than modifying this script
 #
 
 # Global parameters
-XCTOOL_CMD=xctool
 SLATHER_CMD=slather
 SWIFTLINT_CMD=swiftlint
 TAILOR_CMD=tailor
 XCPRETTY_CMD=xcpretty
 LIZARD_CMD=lizard
+XCODEBUILD_CMD=xcodebuild
 
 
 trap "echo 'Script interrupted by Ctrl+C'; stopProgress; exit 1" SIGHUP SIGINT SIGTERM
@@ -149,9 +149,10 @@ vflag=""
 nflag=""
 unittests="on"
 swiftlint="on"
-oclint=""
 tailor="on"
 lizard="on"
+oclint=""
+fauxpas=""
 sonarscanner=""
 
 sonarLanguage=''; readParameter sonarLanguage 'sonar.language'
@@ -159,6 +160,7 @@ sonarLanguage=''; readParameter sonarLanguage 'sonar.language'
 # Enable OCLint if objc
 if [ "$sonarLanguage" != "swift" ]; then #if not full swift, enable OCLint
 	oclint="on"
+	fauxpas="on"
 fi
 if [ "$sonarLanguage" == "objc"  ]; then #if full objc, disable swiftLint
 	swiftlint=""
@@ -313,7 +315,7 @@ cat xcodebuild.log | $XCPRETTY_CMD -r json-compilation-database -o compile_comma
 if [ "$testScheme" != "" ] && [ "$unittests" = "on" ]; then
 
     echo -n 'Running surefire'
-    buildCmd=(xcodebuild clean build test)
+    buildCmd=($XCODEBUILD_CMD clean build test)
     if [[ ! -z "$workspaceFile" ]]; then
         buildCmd+=(-workspace "$workspaceFile")
     elif [[ ! -z "$projectFile" ]]; then
@@ -393,9 +395,31 @@ else
 	echo 'Skipping SwiftLint (objc project or test purposes!)'
 fi
 
+# Tailor
+if [ "$tailor" = "on" ]; then
+	if hash $TAILOR_CMD 2>/dev/null; then
+		echo -n 'Running Tailor...'
+
+		# Build the --include flags
+		currentDirectory=${PWD##*/}
+		echo "$srcDirs" | sed -n 1'p' | tr ',' '\n' > tmpFileRunSonarSh
+		while read word; do
+
+			  # Run tailor command
+		    $TAILOR_CMD $tailorConfiguration "$word" > sonar-reports/"$(echo $word | sed 's/\//_/g')"-tailor.txt
+
+		done < tmpFileRunSonarSh
+		rm -rf tmpFileRunSonarSh
+	else
+		echo "Skipping Tailor (not installed!)"
+	fi
+
+else
+	echo 'Skipping Tailor!'
+fi
+
 if [ "$oclint" = "on" ]; then
 
-	# OCLint
 	echo -n 'Running OCLint...'
 
 	# Options
@@ -436,30 +460,57 @@ if [ "$oclint" = "on" ]; then
 
 
 else
-	echo 'Skipping OCLint'
+	echo 'Skipping OCLint (test purposes only!)'
 fi
 
-# Tailor
-if [ "$tailor" = "on" ]; then
-	if hash $TAILOR_CMD 2>/dev/null; then
-		echo -n 'Running Tailor...'
+#FauxPas
+if [ "$fauxpas" = "on" ]; then
+    hash fauxpas 2>/dev/null
+    if [ $? -eq 0 ]; then
 
-		# Build the --include flags
-		currentDirectory=${PWD##*/}
-		echo "$srcDirs" | sed -n 1'p' | tr ',' '\n' > tmpFileRunSonarSh
-		while read word; do
+        echo -n 'Running FauxPas...'
 
-			  # Run tailor command
-		    $TAILOR_CMD $tailorConfiguration "$word" > sonar-reports/"$(echo $word | sed 's/\//_/g')"-tailor.txt
+        if [ "$projectCount" = "1" ]
+        then
 
-		done < tmpFileRunSonarSh
-		rm -rf tmpFileRunSonarSh
-	else
-		echo "Skipping Tailor (not installed!)"
-	fi
+            fauxpas -o json check $projectFile --workspace $workspaceFile --scheme $appScheme > sonar-reports/fauxpas.json
 
+
+        else
+
+            echo $projectFile | sed -n 1'p' | tr ',' '\n' > tmpFileRunSonarSh
+            while read projectName; do
+
+                $XCODEBUILD_CMD -list -project $projectName | sed -n '/Schemes/,$p' | while read scheme
+                do
+
+                if [ "$scheme" = "" ]
+                then
+                exit
+                fi
+
+                if [ "$scheme" == "${scheme/Schemes/}" ]
+                then
+                    if [ "$scheme" != "$testScheme" ]
+                    then
+                        projectBaseDir=$(dirname $projectName)
+                        workspaceRelativePath=$(python -c "import os.path; print os.path.relpath('$workspaceFile', '$projectBaseDir')")
+                        fauxpas -o json check $projectName --workspace $workspaceRelativePath --scheme $scheme > sonar-reports/$(basename $projectName .xcodeproj)-$scheme-fauxpas.json
+                    fi
+                fi
+
+                done
+
+            done < tmpFileRunSonarSh
+            rm -rf tmpFileRunSonarSh
+
+	    fi
+
+    else
+        echo 'Skipping FauxPas (not installed)'
+    fi
 else
-	echo 'Skipping Tailor!'
+    echo 'Skipping FauxPas'
 fi
 
 # Lizard Complexity
