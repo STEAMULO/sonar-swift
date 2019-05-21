@@ -57,6 +57,11 @@ public class SwiftLintReportParser {
         Matcher matcher = pattern.matcher(line);
         while (matcher.find()) {
             String filePath = matcher.group(1);
+            // When file path start with link, file path is incomplet
+            // Get common string between absolutePath and file path
+            String commonSubstring = this.longestCommonSubstring(filePath, context.fileSystem().baseDir().getPath());
+            // Replace incomplet file path by absolute path
+            filePath = filePath.replace(commonSubstring ,context.fileSystem().baseDir().getPath());
             int lineNum = Integer.parseInt(matcher.group(2));
             String message = matcher.group(5);
             String ruleId = matcher.group(6);
@@ -77,5 +82,28 @@ public class SwiftLintReportParser {
                 .at(dil)
                 .save();
         }
+    }
+
+    private String longestCommonSubstring(String S1, String S2) {
+        int Start = 0;
+        int Max = 0;
+        for (int i = 0; i < S1.length(); i++)
+        {
+            for (int j = 0; j < S2.length(); j++)
+            {
+                int x = 0;
+                while (S1.charAt(i + x) == S2.charAt(j + x))
+                {
+                    x++;
+                    if (((i + x) >= S1.length()) || ((j + x) >= S2.length())) break;
+                }
+                if (x > Max)
+                {
+                    Max = x;
+                    Start = i;
+                }
+            }
+        }
+        return S1.substring(Start, (Start + Max));
     }
 }

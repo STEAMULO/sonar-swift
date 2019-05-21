@@ -1,5 +1,9 @@
 # _SonarQube Plugin for Swift_ Changelog
 
+##  v0.4.4.1
+
+- Merge 0.3.5.2 into 0.4.4
+
 ##  v0.4.4
 - Fixed [java.lang.IllegalArgumentException: Component can't be null](https://github.com/Backelite/sonar-swift/issues/202)
 - Fixed [NPE on CoberturaReportParser line 98](https://github.com/Backelite/sonar-swift/issues/200)
@@ -38,6 +42,15 @@
 - Lower case fastlane by [milch](https://github.com/milch). See [PR 113](https://github.com/Backelite/sonar-swift/pull/113)
 - Ability to locate test files in sub-directories by [Hugal31](https://github.com/Hugal31). See [PR 123](https://github.com/Backelite/sonar-swift/pull/123)
 
+##  v0.3.5.2
+
+- Fix for swiftLint report with file path starting with link
+
+##  v0.3.5.1
+
+- Merge 0.3.4.1 into 0.3.5
+- Merge 0.3.4.2 into 0.3.5
+
 ##  v0.3.5
 
 - SwiftLint 0.21.0 (95 rules now)
@@ -46,6 +59,17 @@
 - Finds project version automatically with CFBundleShortVersionString by [Branlute](https://github.com/Branlute). See [PR 87](https://github.com/Backelite/sonar-swift/pull/87)
 - Fixes coverage with mixed objc swift project by [Branlute](https://github.com/Branlute). See [PR 88](https://github.com/Backelite/sonar-swift/pull/88)
 - Quotes support for multi-word project names by [PetrJandak](https://github.com/PetrJandak). See [PR 97](https://github.com/Backelite/sonar-swift/pull/97)
+
+##  v0.3.4.2
+
+- Avoid conflicts with objc plugins for lizard
+- Avoid conflicts with objc plugins for Surefire
+
+##  v0.3.4.1
+
+- Fix for project with spaces
+- Fix for coverage when using objc and swift project
+- Evol get automatically project version from project's plist
 
 ##  v0.3.4
 
