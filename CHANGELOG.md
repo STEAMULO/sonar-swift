@@ -1,10 +1,88 @@
 # _SonarQube Plugin for Swift_ Changelog
 
+## Develop
+
+#### Breaking
+
+- None.
+
+#### Experimental
+
+- None.
+
+#### Enhancements
+
+- None.
+
+#### Bug Fixes
+
+- None.
+
+## v0.4.6
+
+#### Breaking
+
+- None.
+
+#### Experimental
+
+- None.
+
+#### Enhancements
+
+- Sped up analysis with a single build test using 'build-for-testing'
+- run-sonar-swift.sh now supports -sonarurl -sonarlogin and -sonarpassword arguments for SonarQube server connection
+
+#### Bug Fixes
+
+- Fixed "The domain/default pair of (xxx, yyy) does not exist"
+  [Gaël Foppolo](https://github.com/gaelfoppolo) [#246](https://github.com/Backelite/sonar-swift/pull/246)
+- Add SwiftLint 0.35.0 support
+  [Gaël Foppolo](https://github.com/gaelfoppolo) [#247](https://github.com/Backelite/sonar-swift/pull/247)
+- Fixed NPE on LizardReportParser.addComplexityFileMeasures [#253](https://github.com/Backelite/sonar-swift/issues/253) and [#258](https://github.com/Backelite/sonar-swift/issues/258)
+- Fixed "Unable to locate test source file ****.swift" with Objective-C [#242](https://github.com/Backelite/sonar-swift/issues/242)
+  [egr-ext](https://github.com/egr-ext) [#248](https://github.com/Backelite/sonar-swift/pull/248)
+
+## v0.4.5
+
+#### Breaking
+
+* None.
+
+#### Experimental
+
+* None.
+
+#### Enhancements
+
+- Add SwiftLint 0.31.0 support.
+  [Allan Vialatte](https://github.com/PoissonBallon) [#218](https://github.com/Backelite/sonar-swift/pull/218)
+- Ability to skip tests
+  [Petr Jandak](https://github.com/PetrJandak) [#98](https://github.com/Backelite/sonar-swift/pull/98)
+- Skip oclint analysis on source directories without objc
+  [David Yang](https://github.com/davidy4ng) [#236](https://github.com/Backelite/sonar-swift/pull/236)
+- Add the ability to specify other binaries (Slather only at the moment)
+  [David Yang](https://github.com/davidy4ng) [#165](https://github.com/Backelite/sonar-swift/pull/165)
+
+#### Bug Fixes
+
+- Fixed parameters with spaces in `sonar-project.properties` reading.
+  [David Yang](https://github.com/davidy4ng) [#234](https://github.com/Backelite/sonar-swift/pull/234)
+- Remove measure CoreMetric.FILES
+  [David Yang](https://github.com/davidy4ng) [#238](https://github.com/Backelite/sonar-swift/pull/238)
+- Fixed "LizardReportParser$SwiftFunction cannot be cast to DefaultInputComponent" error
+  [Brian Colvin](https://github.com/bcolvin) [#243](https://github.com/Backelite/sonar-swift/pull/243)
+- Fixed location of the test source file
+  [David Yang](https://github.com/davidy4ng) [#239](https://github.com/Backelite/sonar-swift/pull/239)
+- Fixed LizardSensor logs if report file not exists
+  [Nikolas Falco](https://github.com/nfalco79) [#183](https://github.com/Backelite/sonar-swift/pull/183)
+
 ##  v0.4.4.1
 
 - Merge 0.3.5.2 into 0.4.4
 
 ##  v0.4.4
+
 - Fixed [java.lang.IllegalArgumentException: Component can't be null](https://github.com/Backelite/sonar-swift/issues/202)
 - Fixed [NPE on CoberturaReportParser line 98](https://github.com/Backelite/sonar-swift/issues/200)
 

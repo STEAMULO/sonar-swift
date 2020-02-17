@@ -63,7 +63,7 @@ function readParameter() {
 	parameter=$1
 	shift
 
-	eval $variable="\"$(sed '/^\#/d' sonar-project.properties | grep $parameter | tail -n 1 | cut -d '=' -f2- | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')\""
+	eval $variable=$(printf %q "$(sed '/^\#/d' sonar-project.properties | grep $parameter | tail -n 1 | cut -d '=' -f2-)")
 }
 
 # Run a set of commands with logging and error handling
@@ -167,23 +167,47 @@ if [ "$sonarLanguage" == "objc"  ]; then #if full objc, disable swiftLint
 	tailor=""
 fi
 
-while [ $# -gt 0 ]
-do
-    case "$1" in
-    -v)	vflag=on;;
-    -n) nflag=on;;
-    -nounittests) unittests="";;
-    -noswiftlint) swiftlint="";;
-    -notailor) tailor="";;
-    -usesonarscanner) sonarscanner="on";;
-	-useoclint) oclint="on";;
-	--)	shift; break;;
-	-*)
-        echo >&2 "Usage: $0 [-v]"
-		    exit 1;;
-	*)	break;;		# terminate while loop
-    esac
-    shift
+while [ "$1" != "" ]; do
+  param=$(echo "$1" | awk -F= '{print $1}')
+  value=$(echo "$1" | sed 's/^[^=]*=//g')
+
+  case $param in
+    -v)
+      vflag=on
+      ;;
+    -n)
+      nflag=on
+      ;;
+    -nounittests)
+      unittests=""
+      ;;
+    -noswiftlint)
+      swiftlint=""
+      ;;
+    -notailor)
+      tailor=""
+      ;;
+    -usesonarscanner)
+      sonarscanner="on"
+      ;;
+    -useoclint)
+      oclint="on"
+      ;;
+    -sonarurl)
+      sonarurl="$value"
+      ;;
+    -sonarlogin)
+      sonarlogin="$value"
+      ;;
+    -sonarpassword)
+      sonarpassword="$value"
+      ;;
+    *)
+      echo >&2 "Usage: $0 [-v] [-n] [-nounittests] [-noswiftlint)] [-notailor] [-usesonarscanner] [-sonarurl=value] [-sonarlogin=value] [-sonarpassword=value]"
+      exit 1
+      ;;
+  esac
+  shift
 done
 
 # Usage OK
@@ -223,7 +247,7 @@ binaryName=''; readParameter binaryName 'sonar.ios.appName'
 # Get the path of plist file
 plistFile=`xcodebuild -showBuildSettings -project "${projectFile}" | grep -i 'PRODUCT_SETTINGS_PATH' -m 1 | sed 's/[ ]*PRODUCT_SETTINGS_PATH = //'`
 # Number version from plist if no sonar.projectVersion
-numVerionFromPlist=`defaults read ${plistFile} CFBundleShortVersionString`
+numVersionFromPlist=`defaults read "${plistFile}" CFBundleShortVersionString`
 
 # Read destination simulator
 destinationSimulator=''; readParameter destinationSimulator 'sonar.ios.simulator'
@@ -236,6 +260,9 @@ tailorConfiguration=''; readParameter tailorConfiguration 'sonar.swift.tailor.co
 
 # The file patterns to exclude from coverage report
 excludedPathsFromCoverage=''; readParameter excludedPathsFromCoverage 'sonar.ios.excludedPathsFromCoverage'
+
+# Skipping tests
+skipTests=''; readParameter skipTests 'sonar.swift.skipTests'
 
 # Check for mandatory parameters
 if [ -z "$projectFile" -o "$projectFile" = " " ] && [ -z "$workspaceFile" -o "$workspaceFile" = " " ]; then
@@ -271,7 +298,7 @@ if [ "$vflag" = "on" ]; then
  	echo "Xcode project file is: $projectFile"
 	echo "Xcode workspace file is: $workspaceFile"
  	echo "Xcode application scheme is: $appScheme"
-    echo "Number version from plist is: $numVerionFromPlist"
+    echo "Number version from plist is: $numVersionFromPlist"
   if [ -n "$unittests" ]; then
  	    echo "Destination simulator is: $destinationSimulator"
  	    echo "Excluded paths from coverage are: $excludedPathsFromCoverage"
@@ -300,7 +327,6 @@ mkdir sonar-reports
 echo -n 'Extracting Xcode project information'
 buildCmd=(xcodebuild clean build)
 if [[ "$workspaceFile" != "" ]] ; then
-    buildCmd+=(-workspace "$workspaceFile")
 else
 	buildCmd+=(-project "$projectFile")
 fi
@@ -314,8 +340,8 @@ cat xcodebuild.log | $XCPRETTY_CMD -r json-compilation-database -o compile_comma
 # Unit surefire and coverage
 if [ "$testScheme" != "" ] && [ "$unittests" = "on" ]; then
 
-    echo -n 'Running surefire'
-    buildCmd=($XCODEBUILD_CMD clean build test)
+    echo -n 'Running tests'
+    buildCmd=($XCODEBUILD_CMD test)
     if [[ ! -z "$workspaceFile" ]]; then
         buildCmd+=(-workspace "$workspaceFile")
     elif [[ ! -z "$projectFile" ]]; then
@@ -325,40 +351,45 @@ if [ "$testScheme" != "" ] && [ "$unittests" = "on" ]; then
     if [[ ! -z "$destinationSimulator" ]]; then
         buildCmd+=(-destination "$destinationSimulator" -destination-timeout 60)
     fi
+    if [[ ! -z "$skipTests" ]]; then
+    	buildCmd+=(-skip-testing:"$skipTests")
+    fi
 
     runCommand sonar-reports/xcodebuild.log 65 "${buildCmd[@]}"
     cat sonar-reports/xcodebuild.log  | $XCPRETTY_CMD -t --report junit
     mv build/reports/junit.xml sonar-reports/TEST-report.xml
 
 
-    echo '\nComputing coverage report\n'
+    echo 'Computing coverage report'
+
+	  firstProject=$(echo $projectFile | sed -n 1'p' | tr ',' '\n' | head -n 1)
+
+    slatherCmd=($SLATHER_CMD coverage)
+
+    # Build the --binary-basename
+    if [[ ! -z "$binaryNames" ]]; then
+      echo $binaryNames | sed -n 1'p' | tr ',' '\n' > tmpFileRunSonarSh3
+      while read word; do
+        slatherCmd+=(--binary-basename "$word")
+      done < tmpFileRunSonarSh3
+      rm -rf tmpFileRunSonarSh3
+    fi
 
     # Build the --exclude flags
-    excludedCommandLineFlags=""
     if [ ! -z "$excludedPathsFromCoverage" -a "$excludedPathsFromCoverage" != " " ]; then
 	      echo $excludedPathsFromCoverage | sed -n 1'p' | tr ',' '\n' > tmpFileRunSonarSh2
 	      while read word; do
-		        excludedCommandLineFlags+=" -i $word"
+		        slatherCmd+=(-i "$word")
 	      done < tmpFileRunSonarSh2
 	      rm -rf tmpFileRunSonarSh2
     fi
-    if [ "$vflag" = "on" ]; then
-	      echo "Command line exclusion flags for slather is:$excludedCommandLineFlags"
-    fi
 
-	firstProject=$(echo $projectFile | sed -n 1'p' | tr ',' '\n' | head -n 1)
-
-    slatherCmd=($SLATHER_CMD coverage)
-    if [[ ! -z "$binaryName" ]]; then
-    	slatherCmd+=( --binary-basename "$binaryName")
-    fi
-
-    slatherCmd+=( --input-format profdata $excludedCommandLineFlags --cobertura-xml --output-directory sonar-reports)
+    slatherCmd+=(--input-format profdata --cobertura-xml --output-directory sonar-reports)
 
     if [[ ! -z "$workspaceFile" ]]; then
-        slatherCmd+=( --workspace "$workspaceFile")
+        slatherCmd+=(--workspace "$workspaceFile")
     fi
-    slatherCmd+=( --scheme "$appScheme" "$firstProject")
+    slatherCmd+=(--scheme "$appScheme" "$firstProject")
 
     echo "${slatherCmd[@]}"
 
@@ -530,27 +561,40 @@ fi
 # The project version from properties file
 numVersionSonarRunner=''; readParameter numVersionSonarRunner 'sonar.projectVersion'
 if [ -z "$numVersionSonarRunner" -o "$numVersionSonarRunner" = " " ]; then
-	numVersionSonarRunner=" --define sonar.projectVersion=$numVerionFromPlist"
+	numVersionSonarRunner=" --define sonar.projectVersion=$numVersionFromPlist"
 else
 	#if we have version number in properties file, we don't overide numVersion for sonar-runner/sonar-scanner command
 	numVersionSonarRunner='';
 fi
+# Build sonar-runner / sonnar-scanner arguments
+sonarArguments=();
+if [ "$sonarurl" != "" ]; then
+  sonarArguments+=(-Dsonar.host.url=$sonarurl)
+fi
+if [ "$sonarlogin" != "" ]; then
+  sonarArguments+=(-Dsonar.login=$sonarlogin)
+fi
+if [ "$sonarpassword" != "" ]; then
+  sonarArguments+=(-Dsonar.password=$sonarpassword)
+fi
+
 # SonarQube
 if [ "$sonarscanner" = "on" ]; then
     echo -n 'Running SonarQube using SonarQube Scanner'
     if hash /dev/stdout sonar-scanner 2>/dev/null; then
-        runCommand /dev/stdout 0 sonar-scanner $numVersionSonarRunner
+        runCommand /dev/stdout 0 sonar-scanner "${sonarArguments[@]}" $numVersionSonarRunner
     else
         echo 'Skipping sonar-scanner (not installed!)'
     fi
 else
     echo -n 'Running SonarQube using SonarQube Runner'
     if hash /dev/stdout sonar-runner 2>/dev/null; then
-	   runCommand /dev/stdout 0 sonar-runner $numVersionSonarRunner
+	   runCommand /dev/stdout 0 sonar-runner "${sonarArguments[@]}" $numVersionSonarRunner
     else
-	   runCommand /dev/stdout 0 sonar-scanner $numVersionSonarRunner
+	   runCommand /dev/stdout 0 sonar-scanner "${sonarArguments[@]}" $numVersionSonarRunner
     fi
 fi
+#runCommand /dev/stdout "${slatherCmd[@]}"
 
 # Kill progress indicator
 stopProgress

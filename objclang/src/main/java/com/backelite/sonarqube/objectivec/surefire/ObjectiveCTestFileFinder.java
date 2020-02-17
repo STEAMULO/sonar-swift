@@ -17,6 +17,7 @@
  */
 package com.backelite.sonarqube.objectivec.surefire;
 
+import org.apache.commons.lang.StringUtils;
 import com.backelite.sonarqube.commons.TestFileFinder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,9 +44,16 @@ public class ObjectiveCTestFileFinder implements TestFileFinder {
          * Most xcodebuild JUnit parsers don't include the path to the class in the class field, so search for it if it
          * wasn't found in the root.
          */
+        String lastFileNameComponents = StringUtils.substringAfterLast(fileName, "/");
+
+        if(StringUtils.isEmpty(lastFileNameComponents)) {
+            lastFileNameComponents = fileName;
+        }
+        
         fp = fileSystem.predicates().and(
             fileSystem.predicates().hasType(InputFile.Type.TEST),
-            fileSystem.predicates().matchesPathPattern("**/" + fileName.replace("_", "+")));
+            fileSystem.predicates().matchesPathPattern("**/" + fileName.replace("_", "+"))
+        );
 
         if(fileSystem.hasFiles(fp)){
             /*
@@ -54,7 +62,8 @@ public class ObjectiveCTestFileFinder implements TestFileFinder {
              */
             return fileSystem.inputFiles(fp).iterator().next();
         }
-        LOGGER.info("Unable to locate test source file {}", fileName);
+
+        LOGGER.info("Unable to locate Objective-C test source file for classname {}. Make sure your test class name matches its filename.", classname);
         return null;
     }
 }
