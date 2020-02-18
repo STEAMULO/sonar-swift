@@ -396,6 +396,7 @@ if [ "$testScheme" != "" ] && [ "$unittests" = "on" ]; then
     if [[ ! -z "$workspaceFile" ]]; then
         slatherCmd+=(--workspace "$workspaceFile")
     fi
+    slatherCmd+=(--configuration "$appConfiguration")
     slatherCmd+=(--scheme "$appScheme" "$firstProject")
 
     echo "${slatherCmd[@]}"
