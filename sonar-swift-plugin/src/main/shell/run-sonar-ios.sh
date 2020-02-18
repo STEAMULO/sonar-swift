@@ -333,6 +333,7 @@ mkdir sonar-reports
 echo -n 'Extracting Xcode project information'
 buildCmd=(xcodebuild clean build)
 if [[ "$workspaceFile" != "" ]] ; then
+	buildCmd+=(-workspace "$workspaceFile")
 else
 	buildCmd+=(-project "$projectFile")
 fi
