@@ -73,14 +73,18 @@ public class SwiftLintReportParser {
             }
 
             InputFile inputFile = context.fileSystem().inputFile(fp);
-            NewIssueLocation dil = new DefaultIssueLocation()
-                .on(inputFile)
-                .at(inputFile.selectLine(lineNum))
-                .message(message);
-            context.newIssue()
-                .forRule(RuleKey.of(SwiftLintRulesDefinition.REPOSITORY_KEY, ruleId))
-                .at(dil)
-                .save();
+            try {
+                NewIssueLocation dil = new DefaultIssueLocation()
+                    .on(inputFile)
+                    .at(inputFile.selectLine(lineNum))
+                    .message(message);
+                context.newIssue()
+                    .forRule(RuleKey.of(SwiftLintRulesDefinition.REPOSITORY_KEY, ruleId))
+                    .at(dil)
+                    .save();
+            } catch (Exception e) {
+                LOGGER.warn(e.getMessage());
+            }
         }
     }
 
