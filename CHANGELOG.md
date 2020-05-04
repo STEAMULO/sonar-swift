@@ -18,6 +18,10 @@
 
 - None.
 
+## v0.4.6.2
+
+- Idean#245 fixed bug that unknown rules led to an error. Now, unknown rules are ignored.
+
 ## v0.4.6.1
 
 - Merge 0.4.4.1 into 0.4.6
