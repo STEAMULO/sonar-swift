@@ -2,7 +2,7 @@ import hudson.model.Node
 import hudson.model.Slave
 import jenkins.model.Jenkins
 
-node("master") {
+node() {
     try {
         def nodeNameOSX = []
         def nodeNameOffLine = []
